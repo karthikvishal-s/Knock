@@ -27,6 +27,25 @@ public enum AccountBalances {
         }
     }
 
+    /// Every account's balance in one pass over the ledger, reading only kind, amount and
+    /// date. (Walking `account.entries` materialises every entry and is ~6× slower.)
+    public static func compute(context: ModelContext) throws -> [UUID: Int64] {
+        let accounts = try context.fetch(FetchDescriptor<Account>())
+        var balances = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.openingBalanceMinor) })
+        let openingDates = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.openingDate) })
+        var descriptor = FetchDescriptor<LedgerEntry>()
+        descriptor.propertiesToFetch = [\.kindRaw, \.amountMinor, \.date]
+        for entry in try context.fetch(descriptor) {
+            if let id = entry.account?.id, entry.date >= openingDates[id] ?? .distantPast {
+                balances[id, default: 0] += delta(Movement(kind: entry.kind, amountMinor: entry.amountMinor, date: entry.date, isIncomingTransfer: false))
+            }
+            if entry.kind == .transfer, let id = entry.transferAccount?.id, entry.date >= openingDates[id] ?? .distantPast {
+                balances[id, default: 0] += entry.amountMinor
+            }
+        }
+        return balances
+    }
+
     public static func delta(_ movement: Movement) -> Int64 {
         switch movement.kind {
         case .income, .refund: movement.amountMinor
@@ -144,19 +163,26 @@ public struct AccountService {
         try commit()
     }
 
+    /// One account's balance, fetching only that account's rows.
     public func balanceMinor(of account: Account) -> Int64 {
-        let own = (account.entries ?? []).map {
+        let id = account.id
+        var own = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.account?.id == id })
+        own.propertiesToFetch = [\.kindRaw, \.amountMinor, \.date]
+        let transfer = TransactionKind.transfer.rawValue
+        var incoming = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.transferAccount?.id == id && $0.kindRaw == transfer })
+        incoming.propertiesToFetch = [\.amountMinor, \.date]
+        let movements = ((try? context.fetch(own)) ?? []).map {
             AccountBalances.Movement(kind: $0.kind, amountMinor: $0.amountMinor, date: $0.date, isIncomingTransfer: false)
-        }
-        let incoming = (account.incomingTransfers ?? []).map {
+        } + ((try? context.fetch(incoming)) ?? []).map {
             AccountBalances.Movement(kind: .transfer, amountMinor: $0.amountMinor, date: $0.date, isIncomingTransfer: true)
         }
-        return AccountBalances.balance(openingMinor: account.openingBalanceMinor, openingDate: account.openingDate, movements: own + incoming)
+        return AccountBalances.balance(openingMinor: account.openingBalanceMinor, openingDate: account.openingDate, movements: movements)
     }
 
     /// Sum of active account balances (single currency in v1).
     public func netWorthMinor() throws -> Int64 {
-        try activeAccounts().reduce(0) { $0 + balanceMinor(of: $1) }
+        let balances = try AccountBalances.compute(context: context)
+        return try activeAccounts().reduce(0) { $0 + (balances[$1.id] ?? 0) }
     }
 
     private func apply(_ draft: AccountDraft, to account: Account) {

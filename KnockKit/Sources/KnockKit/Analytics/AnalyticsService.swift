@@ -6,6 +6,7 @@ import SwiftData
 @ModelActor
 public actor AnalyticsService {
     private var cache: [CacheKey: AnalyticsReport] = [:]
+    private var balanceCache: (version: Int, balances: [UUID: Int64], netWorth: Int64)?
 
     private struct CacheKey: Hashable {
         let start: Date
@@ -39,7 +40,7 @@ public actor AnalyticsService {
             categories: try categoryInfos(),
             tagNames: Dictionary(uniqueKeysWithValues: try modelContext.fetch(FetchDescriptor<LedgerTag>()).map { ($0.id, $0.name) }),
             now: now,
-            currentNetWorthMinor: try AccountService(context: modelContext).netWorthMinor(),
+            currentNetWorthMinor: try netWorth(dataVersion: dataVersion),
             cashFlowAfterPeriodMinor: try cashFlow(from: period.end),
             scheduledRemainingSpendMinor: try RecurringService(context: modelContext, calculator: calculator).scheduledSpend(in: period, after: now)
         )
@@ -47,6 +48,25 @@ public actor AnalyticsService {
         if cache.count > 48 { cache.removeAll() }
         cache[key] = report
         return report
+    }
+
+    /// Every account's balance, computed once per data version.
+    public func accountBalances(dataVersion: Int) throws -> [UUID: Int64] {
+        try loadBalances(dataVersion).balances
+    }
+
+    /// Sum of active account balances, computed once per data version.
+    public func netWorth(dataVersion: Int) throws -> Int64 {
+        try loadBalances(dataVersion).netWorth
+    }
+
+    private func loadBalances(_ version: Int) throws -> (version: Int, balances: [UUID: Int64], netWorth: Int64) {
+        if let cached = balanceCache, cached.version == version { return cached }
+        let balances = try AccountBalances.compute(context: modelContext)
+        let active = try modelContext.fetch(FetchDescriptor<Account>(predicate: #Predicate { !$0.isArchived }))
+        let result = (version: version, balances: balances, netWorth: active.reduce(0) { $0 + (balances[$1.id] ?? 0) })
+        balanceCache = result
+        return result
     }
 
     public func points(from start: Date, to end: Date) throws -> [TxnPoint] {

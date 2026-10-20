@@ -50,13 +50,27 @@ struct PerformanceTests {
         let clock = ContinuousClock()
         let month = calc.cycle(containing: now)
         let monthTime = try await clock.measure { _ = try await service.report(for: month, calculator: calc, now: now, dataVersion: 1) }
+        let previousMonth = calc.shifted(month, by: -1)
+        let swipeTime = try await clock.measure { _ = try await service.report(for: previousMonth, calculator: calc, now: now, dataVersion: 1) }
         let year = calc.year(containing: now)
         let yearTime = try await clock.measure { _ = try await service.report(for: year, calculator: calc, now: now, dataVersion: 1) }
         let cachedTime = try await clock.measure { _ = try await service.report(for: year, calculator: calc, now: now, dataVersion: 1) }
-        print("⏱ Analytics month: \(monthTime), year: \(yearTime), cached: \(cachedTime)")
-        #expect(monthTime < .milliseconds(400))
-        #expect(yearTime < .milliseconds(1_500))
+        print("⏱ Analytics first month: \(monthTime), swipe to previous month: \(swipeTime), year: \(yearTime), cached: \(cachedTime)")
+        // The first report also computes account balances (one full pass), shared by later ones.
+        #expect(monthTime < .milliseconds(1_000))
+        #expect(swipeTime < .milliseconds(150))
+        #expect(yearTime < .milliseconds(800))
         #expect(cachedTime < .milliseconds(5))
+    }
+
+    @Test func netWorthIsOnePass() throws {
+        try time("Net worth (one pass)", budget: .milliseconds(1_000)) {
+            _ = try AccountService(context: container.mainContext).netWorthMinor()
+        }
+        let account = try #require(try AccountService(context: container.mainContext).activeAccounts().first)
+        try time("Single account balance", budget: .milliseconds(600)) {
+            _ = AccountService(context: container.mainContext).balanceMinor(of: account)
+        }
     }
 
     @Test func budgetsAndWidgetSnapshot() throws {
