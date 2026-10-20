@@ -148,10 +148,19 @@ final class NotificationScheduler {
     }
 }
 
-/// Writes the widget snapshot and reloads widgets. Filled in by M6.
+/// Writes the widget snapshot to the App Group and reloads widgets and controls.
 enum WidgetSnapshotPublisher {
     @MainActor
     static func publish(context: ModelContext, settings: AppSettings) {
+        guard !AppBootstrap.isUITesting else { return }
+        do {
+            let snapshot = try WidgetSnapshotBuilder.build(context: context, calculator: settings.calculator,
+                                                           currencyCode: settings.currencyCode, showsAmounts: settings.showsTotalsOutsideApp)
+            try WidgetSnapshotStore.write(snapshot)
+        } catch {
+            // Widgets keep showing the previous snapshot; nothing for the user to act on.
+        }
         WidgetCenter.shared.reloadAllTimelines()
+        ControlCenter.shared.reloadAllControls()
     }
 }
