@@ -20,6 +20,13 @@
 			remoteGlobalIDString = AA0000000000000000000F02;
 			remoteInfo = KnockWidgetsExtension;
 		};
+		AA0000000000000000000E02 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000F01;
+			remoteInfo = Knock;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,6 +48,7 @@
 		AA0000000000000000000D02 /* KnockWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KnockWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000D03 /* KnockKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = KnockKit; sourceTree = "<group>"; };
 		AA0000000000000000000D04 /* PLAN.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PLAN.md; sourceTree = "<group>"; };
+		AA0000000000000000000D05 /* KnockUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KnockUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -57,6 +65,11 @@
 		AA0000000000000000000103 /* Config */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Config;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000001A4 /* KnockUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KnockUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -78,6 +91,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000A22 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -87,6 +107,7 @@
 				AA0000000000000000000D04 /* PLAN.md */,
 				AA0000000000000000000101 /* Knock */,
 				AA0000000000000000000102 /* KnockWidgets */,
+				AA00000000000000000001A4 /* KnockUITests */,
 				AA0000000000000000000D03 /* KnockKit */,
 				AA0000000000000000000103 /* Config */,
 				AA0000000000000000000402 /* Products */,
@@ -98,6 +119,7 @@
 			children = (
 				AA0000000000000000000D01 /* Knock.app */,
 				AA0000000000000000000D02 /* KnockWidgetsExtension.appex */,
+				AA0000000000000000000D05 /* KnockUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -153,6 +175,27 @@
 			productReference = AA0000000000000000000D02 /* KnockWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		AA0000000000000000000F03 /* KnockUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000304 /* Build configuration list for PBXNativeTarget "KnockUITests" */;
+			buildPhases = (
+				AA0000000000000000000A21 /* Sources */,
+				AA0000000000000000000A22 /* Frameworks */,
+				AA0000000000000000000A23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000602 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA00000000000000000001A4 /* KnockUITests */,
+			);
+			name = KnockUITests;
+			productName = KnockUITests;
+			productReference = AA0000000000000000000D05 /* KnockUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -168,6 +211,10 @@
 					};
 					AA0000000000000000000F02 = {
 						CreatedOnToolsVersion = 27.1;
+					};
+					AA0000000000000000000F03 = {
+						CreatedOnToolsVersion = 27.1;
+						TestTargetID = AA0000000000000000000F01;
 					};
 				};
 			};
@@ -190,6 +237,7 @@
 			targets = (
 				AA0000000000000000000F01 /* Knock */,
 				AA0000000000000000000F02 /* KnockWidgetsExtension */,
+				AA0000000000000000000F03 /* KnockUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -203,6 +251,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AA0000000000000000000A13 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000A23 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -226,6 +281,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000A21 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -233,6 +295,11 @@
 			isa = PBXTargetDependency;
 			target = AA0000000000000000000F02 /* KnockWidgetsExtension */;
 			targetProxy = AA0000000000000000000E01 /* PBXContainerItemProxy */;
+		};
+		AA0000000000000000000602 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000F01 /* Knock */;
+			targetProxy = AA0000000000000000000E02 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -416,6 +483,44 @@
 			};
 			name = Release;
 		};
+		AA0000000000000000000207 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9L8V6888AW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.karthikvishal.knock.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Knock;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000208 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9L8V6888AW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.karthikvishal.knock.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Knock;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -442,6 +547,15 @@
 			buildConfigurations = (
 				AA0000000000000000000205 /* Debug */,
 				AA0000000000000000000206 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000304 /* Build configuration list for PBXNativeTarget "KnockUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000207 /* Debug */,
+				AA0000000000000000000208 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
