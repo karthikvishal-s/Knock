@@ -7,6 +7,7 @@ public struct HistoryFilter: Equatable, Sendable {
     public var kinds: Set<TransactionKind> = []
     public var categoryIDs: Set<UUID> = []
     public var accountIDs: Set<UUID> = []
+    public var tagIDs: Set<UUID> = []
     /// Whole-day range, `[start, end)`.
     public var dateRange: Period?
     public var minAmount: Decimal?
@@ -18,7 +19,7 @@ public struct HistoryFilter: Equatable, Sendable {
 
     /// Number of filters set, excluding search (for the badge on the filter button).
     public var activeCount: Int {
-        [!kinds.isEmpty, !categoryIDs.isEmpty, !accountIDs.isEmpty, dateRange != nil, minAmount != nil || maxAmount != nil]
+        [!kinds.isEmpty, !categoryIDs.isEmpty, !accountIDs.isEmpty, !tagIDs.isEmpty, dateRange != nil, minAmount != nil || maxAmount != nil]
             .filter { $0 }.count
     }
 
@@ -40,6 +41,9 @@ public struct HistoryFilter: Equatable, Sendable {
         if !accountIDs.isEmpty {
             let ids = [entry.account?.id, entry.transferAccount?.id].compactMap { $0 }
             guard ids.contains(where: accountIDs.contains) else { return false }
+        }
+        if !tagIDs.isEmpty {
+            guard (entry.tags ?? []).contains(where: { tagIDs.contains($0.id) }) else { return false }
         }
         return true
     }
@@ -127,7 +131,7 @@ public struct HistoryQuery {
 
     private func fetch(from start: Date, to end: Date, filter: HistoryFilter) throws -> [LedgerEntry] {
         var descriptor = FetchDescriptor(predicate: predicate(from: start, to: end, filter: filter), sortBy: [SortDescriptor(\.date, order: .reverse)])
-        descriptor.relationshipKeyPathsForPrefetching = [\.category, \.account]
+        descriptor.relationshipKeyPathsForPrefetching = [\.category, \.account, \.tags]
         return try context.fetch(descriptor)
     }
 

@@ -14,6 +14,7 @@ public struct TransactionDraft: Equatable, Sendable {
     public var note: String
     public var payee: String
     public var source: TransactionSource
+    public var tagIDs: [UUID]
 
     public init(
         kind: TransactionKind = .expense,
@@ -25,7 +26,8 @@ public struct TransactionDraft: Equatable, Sendable {
         date: Date = .now,
         note: String = "",
         payee: String = "",
-        source: TransactionSource = .app
+        source: TransactionSource = .app,
+        tagIDs: [UUID] = []
     ) {
         self.kind = kind
         self.amount = amount
@@ -37,6 +39,7 @@ public struct TransactionDraft: Equatable, Sendable {
         self.note = note
         self.payee = payee
         self.source = source
+        self.tagIDs = tagIDs
     }
 
     public init(entry: LedgerEntry) {
@@ -50,7 +53,8 @@ public struct TransactionDraft: Equatable, Sendable {
             date: entry.date,
             note: entry.note,
             payee: entry.payee,
-            source: entry.source
+            source: entry.source,
+            tagIDs: (entry.tags ?? []).map(\.id).sorted { $0.uuidString < $1.uuidString }
         )
     }
 }
@@ -78,7 +82,6 @@ public struct DeletedEntry: Equatable, Sendable {
     public let id: UUID
     public let draft: TransactionDraft
     public let createdAt: Date
-    public let tagIDs: [UUID]
 }
 
 /// The single write path for ledger entries, shared by the app, intents and importers.
@@ -126,7 +129,7 @@ public struct TransactionService {
 
     @discardableResult
     public func delete(_ entry: LedgerEntry) throws -> DeletedEntry {
-        let snapshot = DeletedEntry(id: entry.id, draft: TransactionDraft(entry: entry), createdAt: entry.createdAt, tagIDs: (entry.tags ?? []).map(\.id))
+        let snapshot = DeletedEntry(id: entry.id, draft: TransactionDraft(entry: entry), createdAt: entry.createdAt)
         context.delete(entry)
         try commit()
         return snapshot
@@ -140,10 +143,6 @@ public struct TransactionService {
         entry.createdAt = deleted.createdAt
         context.insert(entry)
         apply(deleted.draft, links, to: entry)
-        if !deleted.tagIDs.isEmpty {
-            let ids = deleted.tagIDs
-            entry.tags = try context.fetch(FetchDescriptor<LedgerTag>(predicate: #Predicate { ids.contains($0.id) }))
-        }
         try commit()
         return entry
     }
@@ -154,12 +153,7 @@ public struct TransactionService {
         var draft = TransactionDraft(entry: entry)
         draft.date = date
         draft.source = .app
-        let copy = try add(draft)
-        if let tags = entry.tags, !tags.isEmpty {
-            copy.tags = tags
-            try context.save()
-        }
-        return copy
+        return try add(draft)
     }
 
     /// The newest entry that "Repeat last" can copy (anything but a transfer).
@@ -213,6 +207,7 @@ public struct TransactionService {
         var category: LedgerCategory?
         var account: Account?
         var transferAccount: Account?
+        var tags: [LedgerTag] = []
     }
 
     private func resolveLinks(_ draft: TransactionDraft) throws -> Links {
@@ -226,6 +221,10 @@ public struct TransactionService {
         if draft.kind == .transfer {
             links.transferAccount = try draft.transferAccountID.flatMap(fetchAccount)
         }
+        if !draft.tagIDs.isEmpty {
+            let ids = draft.tagIDs
+            links.tags = try context.fetch(FetchDescriptor<LedgerTag>(predicate: #Predicate { ids.contains($0.id) }))
+        }
         return links
     }
 
@@ -236,6 +235,14 @@ public struct TransactionService {
         entry.category = links.category
         entry.account = links.account
         entry.transferAccount = links.transferAccount
+        entry.tags = links.tags
+    }
+
+    /// Attaches or removes a receipt photo (already compressed by the caller).
+    public func setReceipt(_ data: Data?, for entry: LedgerEntry) throws {
+        entry.receiptImage = data
+        entry.updatedAt = .now
+        try commit()
     }
 
     private func fetchCategory(_ id: UUID) throws -> LedgerCategory? {
