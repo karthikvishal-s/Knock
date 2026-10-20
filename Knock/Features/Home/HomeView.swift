@@ -13,6 +13,9 @@ struct HomeView: View {
     @State private var period: Period?
     @State private var totals = Totals()
     @State private var netWorth: Int64 = 0
+    @State private var safe: BudgetMath.SafeToSpend?
+    @State private var overall: BudgetStatus?
+    @State private var upcoming: [UpcomingItem] = []
     @State private var editing: LedgerEntry?
     @State private var errorMessage: String?
 
@@ -32,6 +35,20 @@ struct HomeView: View {
                 } header: {
                     if let period {
                         Text(rangeText(period))
+                    }
+                }
+
+                if let overall {
+                    Section {
+                        SafeToSpendCard(status: overall, safe: safe, currencyCode: settings.currencyCode)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                    }
+                }
+
+                if !upcoming.isEmpty {
+                    Section("Upcoming") {
+                        ForEach(upcoming.prefix(3)) { UpcomingRow(item: $0) }
                     }
                 }
 
@@ -100,6 +117,12 @@ struct HomeView: View {
         do {
             totals = Totals(entries: try context.fetch(descriptor))
             netWorth = try AccountService(context: context).netWorthMinor()
+            let calculator = settings.calculator
+            let recurring = RecurringService(context: context, calculator: calculator)
+            let budgets = BudgetService(context: context, calculator: calculator)
+            overall = try budgets.statuses().first { $0.categoryID == nil }
+            safe = try budgets.safeToSpend(upcomingRecurringMinor: recurring.scheduledSpend(in: current, after: .now))
+            upcoming = try recurring.upcoming(days: 7)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -113,6 +136,39 @@ struct HomeView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+}
+
+struct SafeToSpendCard: View {
+    let status: BudgetStatus
+    let safe: BudgetMath.SafeToSpend?
+    let currencyCode: String
+
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Safe to spend today")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let safe {
+                    Text(MoneyFormat.string(minor: safe.leftTodayMinor, currencyCode: currencyCode, showsFraction: false))
+                        .font(.title.bold())
+                        .monospacedDigit()
+                        .foregroundStyle(safe.leftTodayMinor < 0 ? .red : .primary)
+                        .contentTransition(.numericText())
+                    Text("\(MoneyFormat.string(minor: safe.perDayMinor, currencyCode: currencyCode, showsFraction: false))/day · \(safe.daysRemaining) days left")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+            Spacer()
+            BudgetRing(progress: status.progress, isOver: status.isOver)
+                .frame(width: 64, height: 64)
+        }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+        .accessibilityElement(children: .combine)
     }
 }
 

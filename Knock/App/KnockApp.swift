@@ -7,10 +7,12 @@ struct KnockApp: App {
     @State private var router = AppRouter.shared
     @State private var settings = AppSettings.shared
     @State private var undoCenter = UndoCenter()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         LaunchTiming.markAppInit()
         QuickEntryRouting.handler = { kind in AppRouter.shared.openQuickEntry(kind) }
+        AppCoordinator.shared.start()
     }
 
     var body: some Scene {
@@ -21,6 +23,16 @@ struct KnockApp: App {
                 .environment(undoCenter)
         }
         .modelContainer(AppBootstrap.container)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active: AppCoordinator.shared.appBecameActive()
+            case .background: AppCoordinator.shared.scheduleBackgroundRefresh()
+            default: break
+            }
+        }
+        .backgroundTask(.appRefresh(AppCoordinator.refreshTaskID)) {
+            await AppCoordinator.shared.handleBackgroundRefresh()
+        }
     }
 }
 

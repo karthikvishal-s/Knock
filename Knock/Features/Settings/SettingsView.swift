@@ -64,6 +64,19 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Daily reminder", isOn: notificationToggle($settings.dailyReminderEnabled))
+                    if settings.dailyReminderEnabled {
+                        DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
+                    }
+                    Toggle("Budget alerts", isOn: notificationToggle($settings.budgetAlertsEnabled))
+                    Toggle("Bill reminders", isOn: notificationToggle($settings.billRemindersEnabled))
+                } header: {
+                    Text("Notifications")
+                } footer: {
+                    Text("Budget alerts fire once per threshold per cycle. Bill reminders cover recurring transactions set to “Remind me”.")
+                }
+
+                Section {
                     Button("Set up Back Tap", systemImage: "hand.tap") { router.showsBackTapGuide = true }
                     ShortcutsLink()
                         .frame(maxWidth: .infinity)
@@ -81,6 +94,29 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+        }
+    }
+
+    /// Turning a notification feature on asks for permission, then re-plans notifications.
+    private func notificationToggle(_ binding: Binding<Bool>) -> Binding<Bool> {
+        Binding {
+            binding.wrappedValue
+        } set: { on in
+            binding.wrappedValue = on
+            Task {
+                if on { _ = await NotificationScheduler.shared.requestAuthorization() }
+                await NotificationScheduler.shared.reschedule(context: context, settings: settings)
+            }
+        }
+    }
+
+    private var reminderTime: Binding<Date> {
+        Binding {
+            Calendar.current.date(bySettingHour: settings.dailyReminderMinutes / 60, minute: settings.dailyReminderMinutes % 60, second: 0, of: .now) ?? .now
+        } set: { date in
+            let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+            settings.dailyReminderMinutes = (parts.hour ?? 21) * 60 + (parts.minute ?? 0)
+            Task { await NotificationScheduler.shared.reschedule(context: context, settings: settings) }
         }
     }
 

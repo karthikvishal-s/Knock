@@ -17,6 +17,10 @@ final class AppSettings {
         static let hidesTotals = "settings.hidesTotals"
         static let appLockEnabled = "settings.appLockEnabled"
         static let hasCompletedOnboarding = "settings.hasCompletedOnboarding"
+        static let dailyReminderEnabled = "settings.dailyReminderEnabled"
+        static let dailyReminderMinutes = "settings.dailyReminderMinutes"
+        static let budgetAlertsEnabled = "settings.budgetAlertsEnabled"
+        static let billRemindersEnabled = "settings.billRemindersEnabled"
     }
 
     enum CaptureMode: String, CaseIterable, Identifiable {
@@ -74,6 +78,23 @@ final class AppSettings {
         didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding) }
     }
 
+    var dailyReminderEnabled: Bool {
+        didSet { defaults.set(dailyReminderEnabled, forKey: Key.dailyReminderEnabled) }
+    }
+
+    /// Minutes after midnight for the "log today's spending" reminder.
+    var dailyReminderMinutes: Int {
+        didSet { defaults.set(dailyReminderMinutes, forKey: Key.dailyReminderMinutes) }
+    }
+
+    var budgetAlertsEnabled: Bool {
+        didSet { defaults.set(budgetAlertsEnabled, forKey: Key.budgetAlertsEnabled) }
+    }
+
+    var billRemindersEnabled: Bool {
+        didSet { defaults.set(billRemindersEnabled, forKey: Key.billRemindersEnabled) }
+    }
+
     /// Whether totals may be shown outside the locked app (confirmations, widgets).
     var showsTotalsOutsideApp: Bool { !(appLockEnabled && hidesTotals) }
 
@@ -83,6 +104,8 @@ final class AppSettings {
             Key.cycleStartDay: 1, Key.firstWeekday: 0, Key.hapticsEnabled: true,
             Key.captureMode: CaptureMode.inPlace.rawValue, Key.asksNote: false, Key.asksAccount: false,
             Key.hidesTotals: true, Key.appLockEnabled: false, Key.hasCompletedOnboarding: false,
+            Key.dailyReminderEnabled: false, Key.dailyReminderMinutes: 21 * 60, Key.budgetAlertsEnabled: true,
+            Key.billRemindersEnabled: true,
         ])
         cycleStartDay = defaults.integer(forKey: Key.cycleStartDay)
         firstWeekday = defaults.integer(forKey: Key.firstWeekday)
@@ -93,6 +116,10 @@ final class AppSettings {
         hidesTotals = defaults.bool(forKey: Key.hidesTotals)
         appLockEnabled = defaults.bool(forKey: Key.appLockEnabled)
         hasCompletedOnboarding = defaults.bool(forKey: Key.hasCompletedOnboarding)
+        dailyReminderEnabled = defaults.bool(forKey: Key.dailyReminderEnabled)
+        dailyReminderMinutes = defaults.integer(forKey: Key.dailyReminderMinutes)
+        budgetAlertsEnabled = defaults.bool(forKey: Key.budgetAlertsEnabled)
+        billRemindersEnabled = defaults.bool(forKey: Key.billRemindersEnabled)
     }
 
     var calendar: Calendar {

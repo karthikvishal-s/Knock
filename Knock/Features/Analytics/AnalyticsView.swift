@@ -163,12 +163,43 @@ extension Date: @retroactive Identifiable {
     public var id: TimeInterval { timeIntervalSinceReferenceDate }
 }
 
-/// Placeholder until budgets land (M5) — renders nothing.
+/// Budget vs actual per category for the current cycle, over-budget bars in red.
 struct BudgetPerformanceSection: View {
     let period: Period
     let spending: [CategorySlice]
 
-    var body: some View { EmptyView() }
+    @Environment(\.modelContext) private var context
+    @Environment(AppSettings.self) private var settings
+
+    var body: some View {
+        let statuses = period.kind == .cycle && period.contains(.now)
+            ? ((try? BudgetService(context: context, calculator: settings.calculator).statuses()) ?? []).filter { $0.categoryID != nil }
+            : []
+        if !statuses.isEmpty {
+            ChartCard(title: "Budget vs actual") {
+                Chart(statuses) { status in
+                    BarMark(x: .value("Budget", status.availableMinor.rupees), y: .value("Category", status.name))
+                        .foregroundStyle(Color(.tertiarySystemFill))
+                        .cornerRadius(4)
+                    BarMark(x: .value("Spent", max(status.spentMinor, 0).rupees), y: .value("Category", status.name))
+                        .foregroundStyle(status.isOver ? Color.red : ChartColors.spend)
+                        .cornerRadius(4)
+                        .annotation(position: .trailing) {
+                            Text(status.progress.formatted(.percent.precision(.fractionLength(0))))
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(status.isOver ? .red : .secondary)
+                        }
+                }
+                .chartXAxis {
+                    AxisMarks { value in
+                        AxisGridLine().foregroundStyle(.quaternary)
+                        AxisValueLabel { if let v = value.as(Double.self) { Text(compactMoney(Int64(v * 100), currencyCode: settings.currencyCode)) } }
+                    }
+                }
+                .frame(height: CGFloat(statuses.count) * 36 + 30)
+            }
+        }
+    }
 }
 
 #Preview {

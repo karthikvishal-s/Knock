@@ -370,6 +370,7 @@
 				DEVELOPMENT_TEAM = 9L8V6888AW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Knock-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Knock;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -404,6 +405,7 @@
 				DEVELOPMENT_TEAM = 9L8V6888AW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Knock-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Knock;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

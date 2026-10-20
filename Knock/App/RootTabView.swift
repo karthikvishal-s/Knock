@@ -25,7 +25,7 @@ struct RootTabView: View {
                 AnalyticsView()
             }
             Tab("Budgets", systemImage: "gauge.with.dots.needle.50percent", value: .budgets) {
-                ComingSoonView(title: "Budgets", systemImage: "gauge.with.dots.needle.50percent", milestone: "M5")
+                BudgetsView()
             }
             Tab("Settings", systemImage: "gearshape", value: .settings) {
                 SettingsView()
