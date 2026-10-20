@@ -75,19 +75,6 @@ extension RootTabView {
     }
 }
 
-struct ComingSoonView: View {
-    let title: LocalizedStringKey
-    let systemImage: String
-    let milestone: String
-
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView(title, systemImage: systemImage, description: Text("Arrives in milestone \(milestone)."))
-                .navigationTitle(title)
-        }
-    }
-}
-
 #Preview {
     RootTabView()
         .previewEnvironment()

@@ -6,13 +6,15 @@ struct CategoryGrid: View {
     /// Already ranked, likeliest first.
     let categories: [LedgerCategory]
     @Binding var selection: UUID?
-    var visibleCount = 7
+    var columns = 4
     @State private var showsAll = false
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+    /// One row less than the grid holds, leaving room for "More".
+    private var visibleCount: Int { columns * 2 - 1 }
+    private var gridItems: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 8), count: columns) }
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
+        LazyVGrid(columns: gridItems, spacing: 8) {
             ForEach(visible) { category in
                 tile(category)
             }

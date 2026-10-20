@@ -22,21 +22,34 @@ struct QuickEntrySheet: View {
         _model = State(initialValue: QuickEntryModel(kind: initialKind, currencyCode: AppSettings.shared.currencyCode))
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
+        // Fixed layout at normal sizes; at accessibility sizes the top scrolls while the keypad
+        // and Save stay pinned, and text is capped where a bigger size can't fit a keypad key.
         VStack(spacing: 14) {
-            header
-            kindPicker
-            amountDisplay
-            if model.kind == .transfer {
-                transferAccounts
-            } else {
-                CategoryGrid(categories: rankedCategories, selection: $model.categoryID)
+            ScrollView {
+                VStack(spacing: 14) {
+                    header
+                    kindPicker
+                    amountDisplay
+                    if model.kind == .transfer {
+                        transferAccounts
+                    } else {
+                        CategoryGrid(categories: rankedCategories, selection: $model.categoryID,
+                                     columns: typeSize.isAccessibilitySize ? 3 : 4)
+                    }
+                    detailsRow
+                }
             }
-            detailsRow
-            Spacer(minLength: 0)
-            KeypadView(input: $model.input)
-            saveButton
+            .scrollBounceBehavior(.basedOnSize)
+            VStack(spacing: 14) {
+                KeypadView(input: $model.input)
+                saveButton
+            }
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility3)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Color(.systemGroupedBackground))
@@ -53,14 +66,16 @@ struct QuickEntrySheet: View {
     // MARK: Sections
 
     private var header: some View {
-        HStack {
+        let stacked = typeSize.isAccessibilitySize
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+        return layout {
             Button("Close", systemImage: "xmark") { dismiss() }
                 .labelStyle(.iconOnly)
                 .font(.title3)
                 .frame(width: 44, height: 44)
                 .glassEffect(.regular.interactive(), in: .circle)
                 .accessibilityIdentifier("quick-entry-close")
-            Spacer()
+            if !stacked { Spacer() }
             DatePicker("Date", selection: $model.date, in: ...Date.now.addingTimeInterval(365 * 86_400))
                 .labelsHidden()
                 .datePickerStyle(.compact)

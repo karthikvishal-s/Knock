@@ -1,5 +1,6 @@
 import AppIntents
 import KnockKit
+import os
 
 // The capture intents behind Back Tap, Siri, Spotlight, the Action Button and Shortcuts.
 // Flow (PLAN.md §3): amount → category → optional note → optional account → save → snippet.
@@ -128,6 +129,10 @@ enum LogFlowError: Error, CustomLocalizedStringResourceConvertible {
 
 @MainActor
 enum LogFlow {
+    /// Signposts for Instruments: time from intent start to the first prompt and to the save
+    /// (PLAN.md §3.1 budget: < 300 ms to the amount prompt from a cold start).
+    static let signposter = OSSignposter(subsystem: "com.karthikvishal.knock", category: "QuickLog")
+
     static func run(
         kind: TransactionKind,
         amount: IntentParameter<Double?>? = nil,
@@ -139,6 +144,8 @@ enum LogFlow {
         intent: some AppIntent
     ) async throws -> IntentResultContainer<Never, Never, _SnippetIntentContainer, IntentDialog> {
         let settings = AppSettings.shared
+        let interval = signposter.beginInterval("LogFlow")
+        defer { signposter.endInterval("LogFlow", interval) }
         if settings.captureMode == .sheet, presetAmount == nil, amount?.wrappedValue == nil {
             try await openSheet(kind, intent: intent)
             return .result(dialog: "Opening Knock…", snippetIntent: EmptySnippetIntent())
@@ -185,6 +192,7 @@ enum LogFlow {
         }
 
         // 5. Save
+        signposter.emitEvent("Saving")
         let draft = TransactionDraft(
             kind: kind, amount: value, currencyCode: settings.currencyCode,
             categoryID: chosenCategory.id, accountID: accountID, date: date ?? .now, note: noteText, source: .shortcut

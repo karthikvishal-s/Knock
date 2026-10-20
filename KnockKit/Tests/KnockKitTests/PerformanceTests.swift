@@ -68,7 +68,7 @@ struct PerformanceTests {
             _ = try AccountService(context: container.mainContext).netWorthMinor()
         }
         let account = try #require(try AccountService(context: container.mainContext).activeAccounts().first)
-        try time("Single account balance", budget: .milliseconds(600)) {
+        time("Single account balance", budget: .milliseconds(600)) {
             _ = AccountService(context: container.mainContext).balanceMinor(of: account)
         }
     }

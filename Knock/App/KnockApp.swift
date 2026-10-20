@@ -11,7 +11,6 @@ struct KnockApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        LaunchTiming.markAppInit()
         QuickEntryRouting.handler = { kind in AppRouter.shared.openQuickEntry(kind) }
         AppCoordinator.shared.start()
     }

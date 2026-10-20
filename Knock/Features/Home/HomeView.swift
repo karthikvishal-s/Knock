@@ -103,8 +103,11 @@ struct HomeView: View {
         }
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     private var summary: some View {
-        HStack(spacing: 10) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))
+        return layout {
             SummaryCard(title: "Spent", minor: totals.netSpendMinor, currencyCode: settings.currencyCode, color: .primary)
                 .accessibilityIdentifier("summary-spent")
             SummaryCard(title: "Income", minor: totals.incomeMinor, currencyCode: settings.currencyCode, color: .green)
@@ -150,9 +153,11 @@ struct SafeToSpendCard: View {
     let status: BudgetStatus
     let safe: BudgetMath.SafeToSpend?
     let currencyCode: String
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: 16) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 16))
+        return layout {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Safe to spend today")
                     .font(.caption)
@@ -169,9 +174,10 @@ struct SafeToSpendCard: View {
                         .monospacedDigit()
                 }
             }
-            Spacer()
+            Spacer(minLength: 0)
             BudgetRing(progress: status.progress, isOver: status.isOver)
                 .frame(width: 64, height: 64)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))

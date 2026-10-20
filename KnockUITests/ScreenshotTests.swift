@@ -34,3 +34,29 @@ final class ScreenshotTests: XCTestCase {
         add(attachment)
     }
 }
+
+/// Dark mode at the largest accessibility text size: catches clipped or overlapping text.
+@MainActor
+final class AccessibilityScreenshotTests: XCTestCase {
+    func testDarkModeLargestText() throws {
+        XCUIDevice.shared.appearance = .dark
+        defer { XCUIDevice.shared.appearance = .light }
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-sample-data", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        for tab in ["Home", "History", "Analytics", "Budgets", "Settings"] {
+            app.tabBars.buttons[tab].tap()
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "AX-\(tab)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        app.tabBars.buttons["Home"].tap()
+        app.buttons["add-button"].tap()
+        XCTAssertTrue(app.buttons["save-button"].waitForExistence(timeout: 3))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "AX-QuickEntry"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
