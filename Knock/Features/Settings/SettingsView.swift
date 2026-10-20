@@ -24,6 +24,12 @@ struct SettingsView: View {
                     Text("General")
                 }
 
+                Section("Manage") {
+                    NavigationLink { AccountsView() } label: { Label("Accounts", systemImage: "wallet.bifold") }
+                    NavigationLink { CategoriesView() } label: { Label("Categories", systemImage: "square.grid.2x2") }
+                    NavigationLink { TagsView() } label: { Label("Tags", systemImage: "number") }
+                }
+
                 Section {
                     Picker("Cycle starts on", selection: $settings.cycleStartDay) {
                         ForEach(1...31, id: \.self) { day in

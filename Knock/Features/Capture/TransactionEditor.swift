@@ -18,6 +18,8 @@ struct TransactionEditor: View {
 
     @State private var draft: TransactionDraft
     @State private var amount: Decimal?
+    @State private var receipt: Data?
+    @State private var showsReceipt = false
     @State private var confirmsDelete = false
     @State private var errorMessage: String?
 
@@ -26,6 +28,7 @@ struct TransactionEditor: View {
         let draft = entry.map(TransactionDraft.init(entry:)) ?? TransactionDraft(currencyCode: AppSettings.shared.currencyCode)
         _draft = State(initialValue: draft)
         _amount = State(initialValue: entry == nil ? nil : draft.amount)
+        _receipt = State(initialValue: entry?.receiptImage)
     }
 
     var body: some View {
@@ -72,6 +75,27 @@ struct TransactionEditor: View {
                         .lineLimit(1...4)
                 }
 
+                Section("Tags") {
+                    TagPicker(selection: $draft.tagIDs)
+                }
+
+                Section("Receipt") {
+                    if let receipt, let image = UIImage(data: receipt) {
+                        Button {
+                            showsReceipt = true
+                        } label: {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 160)
+                                .clipShape(.rect(cornerRadius: 12))
+                        }
+                        .accessibilityLabel("View receipt")
+                        Button("Remove receipt", systemImage: "trash", role: .destructive) { self.receipt = nil }
+                    }
+                    ReceiptPicker(hasReceipt: receipt != nil) { receipt = $0 }
+                }
+
                 if let entry {
                     Section {
                         Button("Duplicate as today", systemImage: "plus.square.on.square") {
@@ -102,6 +126,9 @@ struct TransactionEditor: View {
                 if let id = draft.categoryID, categories.first(where: { $0.id == id })?.kind != kind.categoryKind {
                     draft.categoryID = nil
                 }
+            }
+            .fullScreenCover(isPresented: $showsReceipt) {
+                ReceiptViewer(data: receipt)
             }
             .confirmationDialog("Delete this transaction?", isPresented: $confirmsDelete, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: delete)
@@ -135,10 +162,15 @@ struct TransactionEditor: View {
         var final = draft
         final.amount = amount ?? 0
         perform {
+            let saved: LedgerEntry
             if let entry {
                 try service.update(entry, with: final)
+                saved = entry
             } else {
-                try service.add(final)
+                saved = try service.add(final)
+            }
+            if saved.receiptImage != receipt {
+                try service.setReceipt(receipt, for: saved)
             }
         }
     }
@@ -158,6 +190,32 @@ struct TransactionEditor: View {
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct ReceiptViewer: View {
+    let data: Data?
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let data, let image = UIImage(data: data) {
+                    ScrollView([.horizontal, .vertical]) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .containerRelativeFrame(.horizontal)
+                    }
+                } else {
+                    ContentUnavailableView("No receipt", systemImage: "doc.text.image")
+                }
+            }
+            .background(.black)
+            .toolbar {
+                Button("Done") { dismiss() }
+            }
         }
     }
 }

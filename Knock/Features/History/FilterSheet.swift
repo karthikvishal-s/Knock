@@ -10,6 +10,7 @@ struct FilterSheet: View {
 
     @Query(sort: \LedgerCategory.sortOrder) private var categories: [LedgerCategory]
     @Query(sort: \Account.sortOrder) private var accounts: [Account]
+    @Query(sort: \LedgerTag.name) private var tags: [LedgerTag]
 
     @State private var working = HistoryFilter()
     @State private var usesDates = false
@@ -44,6 +45,13 @@ struct FilterSheet: View {
                         MultiSelectList(title: "Accounts", groups: [("", accounts.map { ($0.id, $0.displayName) })], selection: $working.accountIDs)
                     } label: {
                         LabeledContent("Accounts", value: summary(working.accountIDs.count))
+                    }
+                    if !tags.isEmpty {
+                        NavigationLink {
+                            MultiSelectList(title: "Tags", groups: [("", tags.map { ($0.id, "#" + $0.name) })], selection: $working.tagIDs)
+                        } label: {
+                            LabeledContent("Tags", value: summary(working.tagIDs.count))
+                        }
                     }
                 }
 

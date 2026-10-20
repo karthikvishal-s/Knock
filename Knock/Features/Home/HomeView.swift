@@ -12,6 +12,7 @@ struct HomeView: View {
 
     @State private var period: Period?
     @State private var totals = Totals()
+    @State private var netWorth: Int64 = 0
     @State private var editing: LedgerEntry?
     @State private var errorMessage: String?
 
@@ -31,6 +32,18 @@ struct HomeView: View {
                 } header: {
                     if let period {
                         Text(rangeText(period))
+                    }
+                }
+
+                Section {
+                    NavigationLink {
+                        AccountsView()
+                    } label: {
+                        LabeledContent("Net worth") {
+                            Text(MoneyFormat.string(minor: netWorth, currencyCode: settings.currencyCode, showsFraction: false))
+                                .monospacedDigit()
+                                .foregroundStyle(netWorth < 0 ? .red : .primary)
+                        }
                     }
                 }
 
@@ -86,6 +99,7 @@ struct HomeView: View {
         let descriptor = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.date >= start && $0.date < end })
         do {
             totals = Totals(entries: try context.fetch(descriptor))
+            netWorth = try AccountService(context: context).netWorthMinor()
         } catch {
             errorMessage = error.localizedDescription
         }
