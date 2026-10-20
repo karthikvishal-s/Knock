@@ -16,14 +16,6 @@ public actor AnalyticsService {
         let dayStamp: Int32
     }
 
-    /// Recurring expenses still due in `period` (supplied by the recurring-rules layer, M5).
-    public var scheduledSpendProvider: (@Sendable (Period, Date) -> Int64)?
-
-    public func setScheduledSpendProvider(_ provider: (@Sendable (Period, Date) -> Int64)?) {
-        scheduledSpendProvider = provider
-        cache.removeAll()
-    }
-
     public func report(for period: Period, calculator: PeriodCalculator, now: Date = .now, dataVersion: Int) throws -> AnalyticsReport {
         let key = CacheKey(start: period.start, end: period.end, cycleStartDay: calculator.cycleStartDay,
                            firstWeekday: calculator.calendar.firstWeekday, version: dataVersion, dayStamp: calculator.dayKey(for: now))
@@ -49,7 +41,7 @@ public actor AnalyticsService {
             now: now,
             currentNetWorthMinor: try AccountService(context: modelContext).netWorthMinor(),
             cashFlowAfterPeriodMinor: try cashFlow(from: period.end),
-            scheduledRemainingSpendMinor: scheduledSpendProvider?(period, now) ?? 0
+            scheduledRemainingSpendMinor: try RecurringService(context: modelContext, calculator: calculator).scheduledSpend(in: period, after: now)
         )
         let report = AnalyticsEngine.report(input, calculator: calculator)
         if cache.count > 48 { cache.removeAll() }

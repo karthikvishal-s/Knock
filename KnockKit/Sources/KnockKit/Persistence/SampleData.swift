@@ -72,7 +72,34 @@ public enum SampleData {
             day = next
         }
         try context.save()
+        try addPlans(context: context, now: now, calendar: calendar, food: category("Food", .expense), bank: bank)
         return count
+    }
+
+    /// Budgets, recurring rules and a goal, so the Budgets screens have something to show.
+    private static func addPlans(context: ModelContext, now: Date, calendar: Calendar, food: LedgerCategory?, bank: Account?) throws {
+        let calculator = PeriodCalculator(calendar: calendar)
+        let budgets = BudgetService(context: context, calculator: calculator)
+        try budgets.setBudget(categoryID: nil, limit: 60_000, currencyCode: "INR", rollover: false, thresholds: [80, 100], now: now)
+        if let food {
+            try budgets.setBudget(categoryID: food.id, limit: 3_000, currencyCode: "INR", rollover: false, thresholds: [80, 100], now: now)
+        }
+        let recurring = RecurringService(context: context, calculator: calculator)
+        let nextMonth = calendar.date(byAdding: .month, value: 1, to: calendar.dateInterval(of: .month, for: now)?.start ?? now) ?? now
+        var netflix = RecurringDraft(spec: RecurrenceSpec(frequency: .monthly, startDate: calendar.date(byAdding: .day, value: 4, to: nextMonth) ?? nextMonth))
+        netflix.amount = 649
+        netflix.payee = "Netflix"
+        netflix.mode = .remind
+        netflix.accountID = bank?.id
+        try recurring.save(netflix, now: now)
+        var gym = RecurringDraft(spec: RecurrenceSpec(frequency: .weekly, startDate: calendar.date(byAdding: .day, value: 2, to: now) ?? now))
+        gym.amount = 300
+        gym.payee = "Yoga class"
+        try recurring.save(gym, now: now)
+        let goals = GoalService(context: context)
+        let trip = try goals.add(name: "Goa trip", emoji: "🏖️", colorHex: "#0A84FF", target: 40_000,
+                                 targetDate: calendar.date(byAdding: .month, value: 4, to: now), currencyCode: "INR")
+        try goals.contribute(12_500, to: trip, currencyCode: "INR", date: now)
     }
 
     private static func at(_ hour: Int, _ day: Date, _ calendar: Calendar, minute: Int = 0) -> Date {
