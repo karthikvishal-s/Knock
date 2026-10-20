@@ -31,6 +31,9 @@ final class AppCoordinator {
     /// Foreground: catch up on recurring entries and re-plan notifications.
     func appBecameActive() {
         postDueRecurring()
+        if !AppBootstrap.isUITesting {
+            _ = try? AutoBackup.performIfNeeded(context: context)
+        }
         Task { await NotificationScheduler.shared.reschedule(context: context, settings: settings) }
         WidgetSnapshotPublisher.publish(context: context, settings: settings)
     }

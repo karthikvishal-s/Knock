@@ -6,6 +6,12 @@
 	<array>
 		<string>com.karthikvishal.knock.refresh</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Knock uses Face ID to unlock your finances when App Lock is on.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

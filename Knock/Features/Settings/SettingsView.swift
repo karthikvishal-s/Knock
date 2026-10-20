@@ -88,12 +88,46 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("App Lock (\(AppLock.biometryName))", isOn: appLockToggle)
+                    if settings.appLockEnabled {
+                        Toggle("Hide totals outside the app", isOn: $settings.hidesTotals)
+                    }
+                } header: {
+                    Text("Privacy")
+                } footer: {
+                    Text("App Lock asks for \(AppLock.biometryName) when you open Knock and blurs it in the app switcher. Back Tap logging still works while locked; with “Hide totals” on, confirmations and widgets don't show your monthly figures.")
+                }
+
+                Section {
+                    NavigationLink { DataSettingsView() } label: { Label("Export, import & backup", systemImage: "externaldrive") }
+                }
+
+                Section {
                     LabeledContent("Version", value: Bundle.main.versionString)
                 } footer: {
                     Text("All data stays on this iPhone. No account, no analytics, no ads.")
                 }
             }
             .navigationTitle("Settings")
+        }
+    }
+
+    /// App Lock only turns on after a successful Face ID / passcode check.
+    private var appLockToggle: Binding<Bool> {
+        Binding {
+            settings.appLockEnabled
+        } set: { on in
+            guard on else {
+                settings.appLockEnabled = false
+                WidgetSnapshotPublisher.publish(context: context, settings: settings)
+                return
+            }
+            Task {
+                if await AppLock.confirmAvailable() {
+                    settings.appLockEnabled = true
+                    WidgetSnapshotPublisher.publish(context: context, settings: settings)
+                }
+            }
         }
     }
 

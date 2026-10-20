@@ -7,6 +7,7 @@ struct KnockApp: App {
     @State private var router = AppRouter.shared
     @State private var settings = AppSettings.shared
     @State private var undoCenter = UndoCenter()
+    @State private var lock = AppLock(settings: .shared)
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -21,6 +22,7 @@ struct KnockApp: App {
                 .environment(router)
                 .environment(settings)
                 .environment(undoCenter)
+                .modifier(LockGate(lock: lock))
         }
         .modelContainer(AppBootstrap.container)
         .onChange(of: scenePhase) { _, phase in
