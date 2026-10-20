@@ -162,6 +162,31 @@ public struct TransactionService {
         return copy
     }
 
+    /// The newest entry that "Repeat last" can copy (anything but a transfer).
+    public func latestRepeatable() throws -> LedgerEntry? {
+        let transfer = TransactionKind.transfer.rawValue
+        var descriptor = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.kindRaw != transfer }, sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
+    /// Deletes an entry only if it was created within `window` of `now` — the confirmation
+    /// snippet's Undo must not remove something old if a stale card is tapped later.
+    @discardableResult
+    public func deleteIfRecent(id: UUID, within window: TimeInterval = 600, now: Date = .now) throws -> Bool {
+        guard let entry = try entry(id: id), now.timeIntervalSince(entry.createdAt) <= window else { return false }
+        try delete(entry)
+        return true
+    }
+
+    /// Income / spending totals for `period`.
+    public func totals(in period: Period) throws -> Totals {
+        let start = period.start, end = period.end
+        var descriptor = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.date >= start && $0.date < end })
+        descriptor.propertiesToFetch = [\.kindRaw, \.amountMinor]
+        return Totals(entries: try context.fetch(descriptor))
+    }
+
     public func entry(id: UUID) throws -> LedgerEntry? {
         var descriptor = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
