@@ -102,6 +102,34 @@ public enum SampleData {
         try goals.contribute(12_500, to: trip, currencyCode: "INR", date: now)
     }
 
+    /// `count` random entries spread evenly over `years`, for performance testing.
+    @discardableResult
+    public static func populateBulk(context: ModelContext, count: Int, years: Int = 4, now: Date = .now, calendar: Calendar = .current, seed: UInt64 = 7) throws -> Int {
+        try Seeder.seedIfNeeded(context: context)
+        let categories = try context.fetch(FetchDescriptor<LedgerCategory>())
+        let expense = categories.filter { $0.kind == .expense }
+        let income = categories.filter { $0.kind == .income }
+        let accounts = try context.fetch(FetchDescriptor<Account>())
+        let calculator = PeriodCalculator(calendar: calendar)
+        var rng = SplitMix64(seed: seed)
+        let span = Double(years) * 365 * 86_400
+        let payees = ["Swiggy", "Zomato", "Uber", "Amazon", "BigBasket", "Metro", "Chai Point", ""]
+        for index in 0..<count {
+            let date = now.addingTimeInterval(-Double(rng.int(in: 0...Int(span))))
+            let isIncome = index % 25 == 0
+            let category = isIncome ? income[rng.int(in: 0...(income.count - 1))] : expense[rng.int(in: 0...(expense.count - 1))]
+            let entry = LedgerEntry(kind: isIncome ? .income : .expense, amountMinor: Int64(rng.int(in: 1_000...500_000)), currencyCode: "INR",
+                                    date: date, dayKey: calculator.dayKey(for: date))
+            entry.payee = payees[rng.int(in: 0...(payees.count - 1))]
+            entry.category = category
+            entry.account = accounts[rng.int(in: 0...(accounts.count - 1))]
+            context.insert(entry)
+            if index % 2_000 == 1_999 { try context.save() }
+        }
+        try context.save()
+        return count
+    }
+
     private static func at(_ hour: Int, _ day: Date, _ calendar: Calendar, minute: Int = 0) -> Date {
         calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day
     }
