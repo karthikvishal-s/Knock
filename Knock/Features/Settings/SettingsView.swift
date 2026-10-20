@@ -5,6 +5,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(AppRouter.self) private var router
     @Environment(\.modelContext) private var context
     @Query(filter: #Predicate<Account> { !$0.isArchived }, sort: \Account.sortOrder) private var accounts: [Account]
 
@@ -40,22 +41,31 @@ struct SettingsView: View {
                     Text("“This month” runs from this day. In shorter months, a cycle that starts on the 29th–31st begins on the month's last day.")
                 }
 
-                Section("Capture") {
+                Section {
+                    Picker("Back Tap & Siri open", selection: $settings.captureMode) {
+                        Text("Quick prompts").tag(AppSettings.CaptureMode.inPlace)
+                        Text("App keypad").tag(AppSettings.CaptureMode.sheet)
+                    }
+                    Toggle("Ask for a note", isOn: $settings.asksNote)
+                    Toggle("Ask which account", isOn: $settings.asksAccount)
                     Toggle("Haptics", isOn: $settings.hapticsEnabled)
+                } header: {
+                    Text("Capture")
+                } footer: {
+                    Text(settings.captureMode == .inPlace
+                         ? "Quick prompts log without opening Knock: amount, then category. The account is only asked when you have more than one."
+                         : "Back Tap and Siri open Knock straight into the keypad.")
                 }
 
                 Section {
+                    Button("Set up Back Tap", systemImage: "hand.tap") { router.showsBackTapGuide = true }
                     ShortcutsLink()
                         .frame(maxWidth: .infinity)
                         .listRowBackground(Color.clear)
                 } header: {
                     Text("Back Tap & Siri")
                 } footer: {
-                    Text("The step-by-step Back Tap guide arrives in M2.")
-                }
-
-                Section("Developer") {
-                    NavigationLink("M0 diagnostics") { SpikeView() }
+                    Text("Say “Log expense in Knock” or “How much did I spend in Knock” to Siri.")
                 }
 
                 Section {

@@ -14,6 +14,9 @@ final class AppRouter {
     static let shared = AppRouter()
 
     var quickEntry: QuickEntryRequest?
+    /// An entry to open in the editor (from a confirmation snippet's "Edit").
+    var editingEntryID: UUID?
+    var showsBackTapGuide = false
 
     func openQuickEntry(_ kind: TransactionKind = .expense) {
         quickEntry = QuickEntryRequest(kind: kind)

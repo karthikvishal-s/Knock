@@ -10,6 +10,7 @@ struct KnockApp: App {
 
     init() {
         LaunchTiming.markAppInit()
+        QuickEntryRouting.handler = { kind in AppRouter.shared.openQuickEntry(kind) }
     }
 
     var body: some Scene {

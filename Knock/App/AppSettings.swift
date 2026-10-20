@@ -11,6 +11,21 @@ final class AppSettings {
         static let cycleStartDay = "settings.cycleStartDay"
         static let firstWeekday = "settings.firstWeekday"
         static let hapticsEnabled = "settings.hapticsEnabled"
+        static let captureMode = "settings.captureMode"
+        static let asksNote = "settings.asksNote"
+        static let asksAccount = "settings.asksAccount"
+        static let hidesTotals = "settings.hidesTotals"
+        static let appLockEnabled = "settings.appLockEnabled"
+        static let hasCompletedOnboarding = "settings.hasCompletedOnboarding"
+    }
+
+    enum CaptureMode: String, CaseIterable, Identifiable {
+        /// Intents prompt in place without opening the app.
+        case inPlace
+        /// Intents open the app's quick-entry sheet.
+        case sheet
+
+        var id: String { rawValue }
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -32,12 +47,52 @@ final class AppSettings {
         didSet { defaults.set(hapticsEnabled, forKey: Key.hapticsEnabled) }
     }
 
+    var captureMode: CaptureMode {
+        didSet { defaults.set(captureMode.rawValue, forKey: Key.captureMode) }
+    }
+
+    /// Quick-log asks "Add a note?" after the category.
+    var asksNote: Bool {
+        didSet { defaults.set(asksNote, forKey: Key.asksNote) }
+    }
+
+    /// Quick-log asks which account, when there's more than one.
+    var asksAccount: Bool {
+        didSet { defaults.set(asksAccount, forKey: Key.asksAccount) }
+    }
+
+    /// With App Lock on, confirmations and widgets hide monthly totals.
+    var hidesTotals: Bool {
+        didSet { defaults.set(hidesTotals, forKey: Key.hidesTotals) }
+    }
+
+    var appLockEnabled: Bool {
+        didSet { defaults.set(appLockEnabled, forKey: Key.appLockEnabled) }
+    }
+
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding) }
+    }
+
+    /// Whether totals may be shown outside the locked app (confirmations, widgets).
+    var showsTotalsOutsideApp: Bool { !(appLockEnabled && hidesTotals) }
+
     init(defaults: UserDefaults) {
         self.defaults = defaults
-        defaults.register(defaults: [Key.cycleStartDay: 1, Key.firstWeekday: 0, Key.hapticsEnabled: true])
+        defaults.register(defaults: [
+            Key.cycleStartDay: 1, Key.firstWeekday: 0, Key.hapticsEnabled: true,
+            Key.captureMode: CaptureMode.inPlace.rawValue, Key.asksNote: false, Key.asksAccount: false,
+            Key.hidesTotals: true, Key.appLockEnabled: false, Key.hasCompletedOnboarding: false,
+        ])
         cycleStartDay = defaults.integer(forKey: Key.cycleStartDay)
         firstWeekday = defaults.integer(forKey: Key.firstWeekday)
         hapticsEnabled = defaults.bool(forKey: Key.hapticsEnabled)
+        captureMode = CaptureMode(rawValue: defaults.string(forKey: Key.captureMode) ?? "") ?? .inPlace
+        asksNote = defaults.bool(forKey: Key.asksNote)
+        asksAccount = defaults.bool(forKey: Key.asksAccount)
+        hidesTotals = defaults.bool(forKey: Key.hidesTotals)
+        appLockEnabled = defaults.bool(forKey: Key.appLockEnabled)
+        hasCompletedOnboarding = defaults.bool(forKey: Key.hasCompletedOnboarding)
     }
 
     var calendar: Calendar {
