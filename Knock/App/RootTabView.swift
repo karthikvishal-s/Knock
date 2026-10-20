@@ -22,7 +22,7 @@ struct RootTabView: View {
                 HistoryView()
             }
             Tab("Analytics", systemImage: "chart.pie", value: .analytics) {
-                ComingSoonView(title: "Analytics", systemImage: "chart.pie", milestone: "M4")
+                AnalyticsView()
             }
             Tab("Budgets", systemImage: "gauge.with.dots.needle.50percent", value: .budgets) {
                 ComingSoonView(title: "Budgets", systemImage: "gauge.with.dots.needle.50percent", milestone: "M5")
