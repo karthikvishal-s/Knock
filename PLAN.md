@@ -1,6 +1,6 @@
 # PLAN — Back-Tap Expense & Income Tracker (codename **Knock**)
 
-> Status: **APPROVED 2026-10-19 — name: Knock. M0 in progress.**
+> Status: **M0–M8 implemented (2026-10-20). Remaining: on-device QA (§11.3).**
 > Date: 2026-10-19 · Author: Karthik Vishal (with Claude Code)
 
 ---
@@ -563,6 +563,40 @@ Each milestone ends with a 10-minute on-device run of its "Ends with" scenario, 
 - **Writes:** `TransactionService` is a plain struct over a `ModelContext` (main context in the app and intents), not a `@ModelActor`. Every save completes in a few milliseconds, and keeping one context makes `@Query` update instantly. A background actor stays reserved for analytics (M4) and imports (M7). The service validates and resolves relationships *before* inserting, so a rejected draft never leaves a half-built row in the context.
 - **History paging:** one calendar month per fetch (newest first, months without matches skipped), so each day's total is always complete. Relationship filters (category/account) are applied in memory per page; date, type, amount and search run in the SwiftData predicate.
 - **Tests:** 54 `KnockKit` tests (period math incl. DST/leap/clamping, money & lakh formatting, keypad, ranking, totals, service incl. undo, History paging/filters, CloudKit-compatibility check on the schema). There's also a `KnockUITests` target for the add/edit/delete flow, and a shared `Knock` scheme that runs both.
+
+### M2–M8 progress log (2026-10-20)
+All milestones are implemented, tested on the iOS 27.1 simulator, and committed per milestone. Deviations from the plan, and why:
+
+- **M2: snippet buttons.** The confirmation snippet has **Undo** and **Edit** (opens the editor). The planned "Add note" button was dropped because a snippet button can't prompt for text; the note is still asked for in the flow when Settings → Ask for a note is on.
+- **M2: intent tests.** The iOS 27 `AppIntentsTesting` framework can run intents out of process, but our flow requires answering the category prompt, which it can't do. Intent logic is unit-tested through `LogConfirmation` and `TransactionService`; the end-to-end Back Tap flow is on the §11.3 device checklist.
+- **M2:** `QuickLogIntent` asks Expense / Income / Credit with `requestChoice`. `RepeatLastTransactionIntent` confirms with `requestConfirmation`. `MonthSummaryIntent` adds a safe-to-spend sentence when a budget exists.
+- **M3: receipts** come from the photo library (`PhotosPicker`); there's no in-app camera. Take the photo with the Camera app, then attach it.
+- **M3: one budget per category.** Merging categories keeps the target's budget if it has one, otherwise moves the source's.
+- **M4:** the donut is capped at 6 slices + "Other". Income vs spending is grouped weekly for day-level periods longer than 14 days. Colours come from the validated reference palette (blue spending / aqua income; colour-blind safe in both modes). Cash flow and net worth stop at today.
+- **M5:** auto-post rules post on launch, on app foreground and in `BGAppRefreshTask` (best effort), idempotently. Remind-mode rules get notifications (≤ 50 pending) and a "Paid" swipe in Upcoming. Budget alerts fire once per threshold per cycle (`BudgetAlertLog`).
+- **M5 bug found by screenshots:** a recurring rule whose start time had non-zero seconds skipped its first occurrence. Fixed by keeping the exact start time-of-day; there's a regression test.
+- **M6:** widgets read a JSON `WidgetSnapshot` written by the app (`AppCoordinator` after every change, debounced). A midnight timeline entry rolls "left today" over to tomorrow's allowance. Control Center buttons open the keypad sheet; in-place prompts from Control Center weren't attempted.
+- **M7:** CSV import supports one amount column or separate debit/credit columns, auto-detects the date format (with a round-trip check, since `DateFormatter` accepts "5 Oct 2026" as dd/MM/yyyy), creates missing categories/accounts/tags, and skips duplicates by fingerprint (re-import is safe). JSON backup is versioned and lossless (tested erase → restore). Auto-backup runs daily and keeps 14 in Documents/Backups (visible in Files). App Lock uses `deviceOwnerAuthentication` (Face ID + passcode fallback) and blurs the app switcher; Back Tap keeps working while locked.
+- **M7 bug found by UI tests:** the App Lock overlay was applied outside the environment and crashed on first read of `AppSettings`. Fixed by moving it inside.
+- **M8 performance (20,000 entries, Mac test host):** walking `account.entries` cost 2.3 s per net-worth computation. Balances are now one lightweight pass, cached per data version in the `AnalyticsService` actor and never computed on the main thread.
+
+  | Operation | Before | After |
+  |---|---|---|
+  | Net worth | 2,270 ms | 461 ms (background, once per change) |
+  | First analytics report | 2,295 ms | 494 ms |
+  | Swipe to previous month | ~2,300 ms | 41 ms |
+  | Year report | 2,465 ms | 232 ms |
+  | History first page / search | 18 / 11 ms | 16 / 11 ms |
+  | Widget snapshot | — | 41 ms |
+
+  `MonthlyRollup` wasn't needed.
+- **M8:** at accessibility text sizes, Home's cards stack and quick entry scrolls above a pinned keypad (capped at AX1 for the keys). Signposts (`QuickLog` category) time the Back Tap flow in Instruments. App icon in light, dark and tinted variants, drawn in code. String Catalog added (English only).
+
+### Not done / next
+- On-device QA of Back Tap, Siri, widgets, controls, notifications and Face ID (checklist §11.3). The simulator can't exercise these.
+- Multi-currency UI (M9); every entry already stores its currency code.
+- iCloud sync needs a paid developer account; the schema is CloudKit-ready.
+- Translations (the String Catalog is in place).
 
 ### Verification notes
 - **Verified:** installed toolchain and SDK; App Intents snippet APIs (`SnippetIntent`, `Button(intent:)`, `requestConfirmation`) exist since iOS 26 and are unchanged in iOS 27; iOS 27 adds `AppIntentsTesting`, `LongRunningIntent`, `EntityCollection` and `SyncableEntity` (not needed here except testing); App Intents don't require the Siri entitlement.
