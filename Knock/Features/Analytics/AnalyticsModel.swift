@@ -1,7 +1,6 @@
 import Foundation
 import KnockKit
 import Observation
-import SwiftData
 
 /// Period navigation and the current report. Reports are built off-main by `AnalyticsService`.
 @Observable
@@ -12,15 +11,6 @@ final class AnalyticsModel {
     private(set) var isLoading = false
     var errorMessage: String?
     var customRange: (from: Date, through: Date) = (Calendar.current.date(byAdding: .day, value: -29, to: .now) ?? .now, .now)
-
-    @ObservationIgnored private var service: AnalyticsService?
-
-    func service(for container: ModelContainer) -> AnalyticsService {
-        if let service { return service }
-        let created = AnalyticsService(modelContainer: container)
-        service = created
-        return created
-    }
 
     func reset(to kind: Period.Kind, settings: AppSettings) {
         self.kind = kind
@@ -44,12 +34,12 @@ final class AnalyticsModel {
     }
 
     @MainActor
-    func load(container: ModelContainer, settings: AppSettings) async {
+    func load(settings: AppSettings) async {
         if period == nil { reset(to: kind, settings: settings) }
         guard let period else { return }
         isLoading = report == nil
         do {
-            let result = try await service(for: container).report(for: period, calculator: settings.calculator, dataVersion: StoreEvents.dataVersion)
+            let result = try await AppServices.analytics.report(for: period, calculator: settings.calculator, dataVersion: StoreEvents.dataVersion)
             if result.period == self.period { report = result }
             errorMessage = nil
         } catch {

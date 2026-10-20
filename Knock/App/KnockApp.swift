@@ -38,6 +38,12 @@ struct KnockApp: App {
     }
 }
 
+/// Long-lived services shared across screens.
+enum AppServices {
+    /// Background analytics and balances, cached per data version.
+    static let analytics = AnalyticsService(modelContainer: AppBootstrap.container)
+}
+
 /// Builds the one `ModelContainer` the app and its intents share.
 enum AppBootstrap {
     /// Set when the on-disk store couldn't open and the app fell back to memory.

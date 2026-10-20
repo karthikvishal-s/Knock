@@ -108,6 +108,7 @@ struct AccountDetailView: View {
     @State private var editing: LedgerEntry?
     @State private var editsAccount = false
     @State private var refreshToken = 0
+    @State private var balance: Int64 = 0
 
     var body: some View {
         List {
@@ -149,11 +150,9 @@ struct AccountDetailView: View {
         .sheet(item: $editing) { TransactionEditor(entry: $0) }
         .sheet(isPresented: $editsAccount) { AccountEditor(account: account) }
         .onReceive(NotificationCenter.default.publisher(for: StoreEvents.didChange)) { _ in refreshToken += 1 }
-    }
-
-    private var balance: Int64 {
-        _ = refreshToken
-        return AccountService(context: context).balanceMinor(of: account)
+        .task(id: refreshToken) {
+            balance = (try? await AppServices.analytics.accountBalances(dataVersion: StoreEvents.dataVersion))?[account.id] ?? account.openingBalanceMinor
+        }
     }
 
     private var entries: [LedgerEntry] {

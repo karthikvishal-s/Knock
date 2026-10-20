@@ -31,7 +31,7 @@ struct AnalyticsView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Analytics")
             .task(id: LoadKey(period: model.period, version: version, cycle: settings.cycleStartDay, weekday: settings.firstWeekday)) {
-                await model.load(container: context.container, settings: settings)
+                await model.load(settings: settings)
             }
             .onChange(of: settings.cycleStartDay) { model.reset(to: model.kind, settings: settings) }
             .onReceive(NotificationCenter.default.publisher(for: StoreEvents.didChange)) { _ in version = StoreEvents.dataVersion }

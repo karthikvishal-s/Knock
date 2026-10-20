@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var period: Period?
     @State private var totals = Totals()
     @State private var netWorth: Int64 = 0
+    @State private var dataVersion = StoreEvents.dataVersion
     @State private var safe: BudgetMath.SafeToSpend?
     @State private var overall: BudgetStatus?
     @State private var upcoming: [UpcomingItem] = []
@@ -85,7 +86,14 @@ struct HomeView: View {
             .navigationTitle(period.map { $0.start.formatted(.dateTime.month(.wide)) } ?? String(localized: "Home"))
             .refreshable { refresh() }
             .task(id: settings.cycleStartDay) { refresh() }
-            .onReceive(NotificationCenter.default.publisher(for: StoreEvents.didChange)) { _ in refresh() }
+            .task(id: dataVersion) {
+                // A full pass over the ledger: done off the main thread, once per change.
+                netWorth = (try? await AppServices.analytics.netWorth(dataVersion: dataVersion)) ?? netWorth
+            }
+            .onReceive(NotificationCenter.default.publisher(for: StoreEvents.didChange)) { _ in
+                refresh()
+                dataVersion = StoreEvents.dataVersion
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in refresh() }
             .sheet(item: $editing) { entry in
                 TransactionEditor(entry: entry)
@@ -116,7 +124,6 @@ struct HomeView: View {
         let descriptor = FetchDescriptor<LedgerEntry>(predicate: #Predicate { $0.date >= start && $0.date < end })
         do {
             totals = Totals(entries: try context.fetch(descriptor))
-            netWorth = try AccountService(context: context).netWorthMinor()
             let calculator = settings.calculator
             let recurring = RecurringService(context: context, calculator: calculator)
             let budgets = BudgetService(context: context, calculator: calculator)

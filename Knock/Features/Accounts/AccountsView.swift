@@ -13,6 +13,7 @@ struct AccountsView: View {
     @State private var transfers = false
     @State private var errorMessage: String?
     @State private var refreshToken = 0
+    @State private var balances: [UUID: Int64] = [:]
 
     private var service: AccountService { AccountService(context: context) }
     private var active: [Account] { accounts.filter { !$0.isArchived } }
@@ -40,7 +41,7 @@ struct AccountsView: View {
                     NavigationLink {
                         AccountDetailView(account: account)
                     } label: {
-                        AccountRow(account: account, balanceMinor: service.balanceMinor(of: account))
+                        AccountRow(account: account, balanceMinor: balances[account.id] ?? account.openingBalanceMinor)
                     }
                     .swipeActions {
                         Button("Archive", systemImage: "archivebox") { archive(account, true) }
@@ -54,7 +55,7 @@ struct AccountsView: View {
             if !archived.isEmpty {
                 Section("Archived") {
                     ForEach(archived) { account in
-                        AccountRow(account: account, balanceMinor: service.balanceMinor(of: account))
+                        AccountRow(account: account, balanceMinor: balances[account.id] ?? account.openingBalanceMinor)
                             .opacity(0.6)
                             .swipeActions {
                                 Button("Restore", systemImage: "arrow.uturn.backward") { archive(account, false) }
@@ -82,6 +83,9 @@ struct AccountsView: View {
         .sheet(item: $editing) { AccountEditor(account: $0) }
         .fullScreenCover(isPresented: $transfers) { QuickEntrySheet(initialKind: .transfer) }
         .onReceive(NotificationCenter.default.publisher(for: StoreEvents.didChange)) { _ in refreshToken += 1 }
+        .task(id: refreshToken) {
+            balances = (try? await AppServices.analytics.accountBalances(dataVersion: StoreEvents.dataVersion)) ?? balances
+        }
         .alert("Couldn't update account", isPresented: .constant(errorMessage != nil)) {
             Button("OK") { errorMessage = nil }
         } message: {
@@ -90,8 +94,7 @@ struct AccountsView: View {
     }
 
     private var netWorth: Int64 {
-        _ = refreshToken
-        return (try? service.netWorthMinor()) ?? 0
+        active.reduce(0) { $0 + (balances[$1.id] ?? $1.openingBalanceMinor) }
     }
 
     private func archive(_ account: Account, _ archived: Bool) {
