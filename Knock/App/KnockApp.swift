@@ -19,10 +19,10 @@ struct KnockApp: App {
     var body: some Scene {
         WindowGroup {
             RootTabView()
+                .modifier(LockGate(lock: lock))
                 .environment(router)
                 .environment(settings)
                 .environment(undoCenter)
-                .modifier(LockGate(lock: lock))
         }
         .modelContainer(AppBootstrap.container)
         .onChange(of: scenePhase) { _, phase in
