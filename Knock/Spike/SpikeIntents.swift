@@ -26,7 +26,7 @@ struct SpikeLogExpenseIntent: AppIntent {
 
         if SpikeSettings.openSheet {
             try await continueInForeground(alwaysConfirm: false)
-            AppRouter.shared.quickEntry = .expense
+            AppRouter.shared.openQuickEntry(.expense)
             return .result(dialog: "Opening Knock…")
         }
 
