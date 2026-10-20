@@ -558,6 +558,12 @@ Each milestone ends with a 10-minute on-device run of its "Ends with" scenario, 
   - The iOS 27.1 simulator runtime is installed for UI tests.
 - **M0 signed off.**
 
+### M1 progress log
+- **Naming change:** the SwiftData models are `LedgerEntry`, `LedgerCategory` and `LedgerTag`. `Transaction` collides with SwiftUI's `Transaction`, `Category` with the Objective-C runtime typedef, and `Tag` with Swift Testing's `Tag`. `Account`, `Budget`, `RecurringRule`, `SavingsGoal` and `GoalContribution` keep their names. §4 otherwise applies as written.
+- **Writes:** `TransactionService` is a plain struct over a `ModelContext` (main context in the app and intents), not a `@ModelActor`. Every save completes in a few milliseconds, and keeping one context makes `@Query` update instantly. A background actor stays reserved for analytics (M4) and imports (M7). The service validates and resolves relationships *before* inserting, so a rejected draft never leaves a half-built row in the context.
+- **History paging:** one calendar month per fetch (newest first, months without matches skipped), so each day's total is always complete. Relationship filters (category/account) are applied in memory per page; date, type, amount and search run in the SwiftData predicate.
+- **Tests:** 54 `KnockKit` tests (period math incl. DST/leap/clamping, money & lakh formatting, keypad, ranking, totals, service incl. undo, History paging/filters, CloudKit-compatibility check on the schema). There's also a `KnockUITests` target for the add/edit/delete flow, and a shared `Knock` scheme that runs both.
+
 ### Verification notes
 - **Verified:** installed toolchain and SDK; App Intents snippet APIs (`SnippetIntent`, `Button(intent:)`, `requestConfirmation`) exist since iOS 26 and are unchanged in iOS 27; iOS 27 adds `AppIntentsTesting`, `LongRunningIntent`, `EntityCollection` and `SyncableEntity` (not needed here except testing); App Intents don't require the Siri entitlement.
 - **To verify on device / in SDK headers (scheduled in M0/M2):** App Groups on a Personal Team; Back Tap picker behaviour for App Shortcuts on iOS 27; exact `supportedModes` / `continueInForeground` signatures; Control Center buttons running prompting intents in place.
